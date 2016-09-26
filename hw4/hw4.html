@@ -1,0 +1,211 @@
+
+<html>
+<head>
+<title>Homework 4</title>
+<!--
+<BODY>
+This is for USC disclaimer
+</BODY>
+-->
+<style type="text/css">
+  h1{
+    font-size: 20px;
+  }
+  form{
+    text-align:center;
+  }
+</style>
+<script>
+function is_all_ws( nod )
+{
+  // Use ECMA-262 Edition 3 String and RegExp features
+  return !(/[^\t\n\r ]/.test(nod.textContent));
+}
+
+function is_ignorable( nod )
+{
+  return ( nod.nodeType == 8) || // A comment node
+         ( (nod.nodeType == 3) && is_all_ws(nod) ); // a text node, all ws
+}
+
+function first_child( par )
+{
+  var res=par.firstChild;
+  while (res) {
+    if (!is_ignorable(res)) return res;
+    res = res.nextSibling;
+  }
+  return null;
+}
+
+function generateHTML(xmlDoc)
+   {       ELEMENT_NODE = 1;    // MS parser doesn't define Node.ELEMENT_NODE
+           root=xmlDoc.DocumentElement;
+           html_text="<html><head><title>Online Newspaper Listings</title></head><body>";
+           html_text+="<table border='2' align='center' >";
+           table=xmlDoc.getElementsByTagName("Table");
+           headers = xmlDoc.getElementsByTagName("Header");
+           headerNodeList=headers.item(0).childNodes;
+           html_text+="<tbody>";
+           html_text+="<tr>";
+           x=10;  y=10;
+       // output the headers
+           for(i=0;i<headerNodeList.length;i++){
+             if(headerNodeList.item(i).nodeType==ELEMENT_NODE){
+                 header=headerNodeList.item(i).firstChild.nodeValue;
+
+            html_text+="<th>"+header+"</th>";  }
+          }
+
+           html_text+="</tr>";
+           //output out the value
+
+           content = xmlDoc.getElementsByTagName("Row");
+
+            for(i=0;i<content.length;i++){
+              contentNodeList = content.item(i).childNodes;
+               html_text+="<tr>";
+              for(j=0;j<contentNodeList.length;j++){
+                  if(contentNodeList.item(j).nodeType==ELEMENT_NODE){
+                    if(contentNodeList.item(j).nodeName=="Slot"||contentNodeList.item(j).nodeName=="Newspaper"){
+                      if(first_child(contentNodeList.item(j))==null){
+                        html_text+="<td>" +"N.A."+"</td>";
+                      }else{
+                      html_text+="<td>" + contentNodeList.item(j).firstChild.nodeValue+"</td>";
+                       }
+                    }else if(contentNodeList.item(j).nodeName=="Location"){
+                          locations = xmlDoc.getElementsByTagName("Location");
+                          locaNodeList = locations.item(i).childNodes;
+                           if(first_child(locations.item(i))==null){
+                                html_text+="<td><ul>"+"N.A."+"</ul></td>";
+                           }else{
+                                if(locaNodeList.length==0){
+                                  html_text+="<td><ul>"+"N.A."+"</ul></td>";
+                                } else{
+
+                                  html_text+="<td>";
+                                  html_text+="<ul>";
+                                  var count = 0;
+                                  for(k=0;k<locaNodeList.length;k++){
+                                  if(locaNodeList.item(k).nodeType==ELEMENT_NODE){
+
+                                  if(first_child(locaNodeList.item(k))!=null){
+                                  //  html_text+="<li>" +"N.A."+"</li>";
+                                  // }else{
+                                  html_text += "<li>";
+                                  html_text+=locaNodeList.item(k).firstChild.nodeValue;
+                                  html_text += "</li>";
+                                  count++;
+                                      }
+                                    }
+                                  }
+                                  if(count == 0){
+
+                                     html_text+= "N.A.";
+                                  }
+
+                              html_text+="</ul>";
+
+                              html_text+="</td>";
+
+                          }
+                        }
+
+                    }else if(contentNodeList.item(j).nodeName=="HomePage"){
+                          if(first_child(contentNodeList.item(j))==null){
+                          html_text+="<td>" +"N.A."+"</td>";
+                          }else{
+
+                         html_text+="<td><a href='"+contentNodeList.item(j).firstChild.nodeValue+"'>"+contentNodeList.item(j).firstChild.nodeValue+"</a></td>";
+                          }
+                    }else if(contentNodeList.item(j).nodeName=="Logo"){
+                            if(first_child(contentNodeList.item(j))==null){
+                              html_text+="<td>" +"N.A."+"</td>";
+                            }else{
+                             html_text+="<td><img src='"+contentNodeList.item(j).firstChild.nodeValue+"'></td>";
+                            }
+                    }
+
+                  }
+
+              }
+               html_text+="</tr>";
+            }
+            html_text+="</tbody>";  html_text+="</table>";
+           html_text+="</body></html>";
+
+}
+
+function loadXML(url) {
+ if (window.XMLHttpRequest){// code for IE7+, Firefox, Chrome, Opera, Safari
+       xmlhttp=new XMLHttpRequest();   }
+ else {// code for IE6, IE5
+    xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");  }
+
+  xmlhttp.open("GET",url,false);
+  xmlhttp.send();
+  xmlDoc=xmlhttp.responseXML;
+  if(xmlDoc.documentElement.nodeName=="parsererror"){
+    alert("Error in XML Document");
+    return;
+  }
+  return xmlDoc;
+  }
+
+function viewXML(what){
+  var URL = what.URL.value;
+  if(URL.trim().length==0){
+    alert("Please input the XML file name you want to parse");
+    return;
+  }
+  // handle file that doesn't exist.
+    try{
+    xmlDoc = loadXML(URL);
+    }catch(e){
+      alert("XML document does not exist");
+      return;
+    }
+    var x = xmlDoc.getElementsByTagName("Row");
+     if(x.length==0){
+       alert("No Newspapers in XML file");
+       return;
+     }
+ if (window.ActiveXObject) //if IE, simply execute script (due to async prop).
+ {  if (xmlDoc.parseError.errorCode != 0) {
+    var myErr = xmlDoc.parseError;
+    generateError(xmlDoc);
+
+    hWin = window.open("", "Error", "height=300,width=340");
+    hWin.document.write(html_text);
+  } else {
+            try{
+            generateHTML(xmlDoc);
+            hWin = window.open("", "","scrollbars=yes");
+            hWin.document.write(html_text);}
+            catch(e){
+              alert("Error in XML Document!");
+            }
+            }
+ } else //else if FF, execute script once XML object has loaded
+ {  try{
+    xmlDoc.onload=generateHTML(xmlDoc);
+    hWin = window.open("", "","scrollbars=yes");
+    hWin.document.write(html_text);}
+    catch(e){
+      alert("Error in XML Document");
+    }
+  }
+ hWin.document.close();
+
+}
+ </script>
+ </head>
+<body>
+<h1 align="center">Enter URL for Newspaper List XML File</h1>
+<form name="myform" method="POST" id="location" ">
+<input type="text" name="URL" maxlength="100" size="30"   />
+<br />
+<input type="button" name="submit" value="Submit Query" onClick="viewXML(this.form)" />
+</form>
+</body>
+</html>
